@@ -1,52 +1,333 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="utf-8">
-  <title>Joel</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Totally Normal CAPTCHA</title>
+    <style>
+      body {
+        font-family: sans-serif;
+        padding: 40px;
+        background-color: #f5f5f5;
+      }
+      .container {
+        max-width: 400px;
+        margin: auto;
+        border: 1px solid #ccc;
+        padding: 100px 20px 100px 20px; /* extra vertical space */
+        border-radius: 8px;
+        background-color: white;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        height: 900px; /* force vertical scroll */
+        overflow-y: auto;
+      }
+      .button-row {
+        margin-top: 20px;
+        display: flex;
+        gap: 10px;
+      }
+      button {
+        padding: 8px 16px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        background-color: #f9f9f9;
+        cursor: pointer;
+      }
+      button:hover {
+        background-color: #e9e9e9;
+      }
+      #error-msg {
+        color: red;
+        margin-top: 10px;
+        min-height: 20px;
+        transition: opacity 0.3s;
+      }
+      #success-msg {
+        color: green;
+        margin-top: 10px;
+        min-height: 20px;
+        transition: opacity 0.3s;
+      }
+      #checkbox-container {
+        margin-top: 20px;
+        position: relative;
+        height: 60px;
+      }
+      #sneaky-checkbox {
+        position: relative;
+        transition: margin-top 0.2s ease;
+      }
+      #word-input {
+        padding: 8px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        width: 200px;
+        margin-top: 5px;
+      }
+      #checkbox-label {
+        transition: opacity 0.2s ease;
+      }
+      #word-count {
+        margin-top: 300px; /* push this far down to require scrolling */
+        font-weight: bold;
+        color: #666;
+      }
+      h3 {
+        color: #333;
+        margin-bottom: 20px;
+      }
+      label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: bold;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h3>Please prove you are not a robot</h3>
 
-  <style type="text/css">
-    html,
-    body {
-      background: pink;
-      margin: 0;
-      padding: 0;
-      font-family: sans-serif;
-    }
+      <label id="word-label" for="word-input">Type the word: HORSE</label>
+      <input id="word-input" type="text" placeholder="Enter the word here" />
 
-    #captcha-container {
-      background: white;
-      width: 390px;
-      height: 300px;
-    }
+      <div id="checkbox-container">
+        <input id="sneaky-checkbox" type="checkbox" />
+        <label id="checkbox-label" for="sneaky-checkbox"
+          >I am not a robot</label
+        >
+      </div>
 
-    /* Your style here... */
-  </style>
-</head>
+      <div class="button-row">
+        <button id="submit-btn">Submit</button>
+        <button id="clear-btn">Clear</button>
+      </div>
 
-<body>
-  <div id="captcha-container">
-    <!-- Add your CAPTCHA here: -->
-    Hello world!
+      <div id="error-msg"></div>
+      <div id="success-msg"></div>
+      <div id="word-count">Word 1/5</div>
+    </div>
 
-    <!-- We've added a sample button. Feel free to remove it: -->
-    <button id="solve">
-      Solve!
-    </button>
-  </div>
+    <script>
+      const words = ["HORSE", "MANATEE", "PLANET", "DOCTOR", "TUNNEL"];
+      const gaslightMap = {
+        HORSE: "HOUSE",
+        MANATEE: "MATINEE",
+        PLANET: "PLANED",
+        DOCTOR: "DUCTOR",
+        TUNNEL: "FUNNEL",
+      };
 
-  <script type="text/javascript">
-    (function(window, document){
-      // This is how you tell the parent window that the CAPTCHA was successful.
-      function captchaSuccess() {
-        window.top.postMessage("success", '*');
+      let currentWordIndex = 0;
+      let correctCount = 0;
+      let buttonsSwapped = false;
+
+      const input = document.getElementById("word-input");
+      const label = document.getElementById("word-label");
+      const errorMsg = document.getElementById("error-msg");
+      const successMsg = document.getElementById("success-msg");
+      const checkbox = document.getElementById("sneaky-checkbox");
+      const checkboxLabel = document.getElementById("checkbox-label");
+      const submitBtn = document.getElementById("submit-btn");
+      const clearBtn = document.getElementById("clear-btn");
+      const wordCounter = document.getElementById("word-count");
+
+      function setNewWord() {
+        currentWordIndex = Math.floor(Math.random() * words.length);
+        const currentWord = words[currentWordIndex];
+        label.textContent = `Type the word: ${currentWord}`;
+        input.value = "";
+        checkbox.checked = false;
       }
 
-      // Your CAPTCHA code goes here, we've added a simple example below:
-      document.getElementById('solve')
-           .addEventListener('click', () => captchaSuccess());
+      function showError(msg) {
+        errorMsg.textContent = msg;
+        errorMsg.style.opacity = 1;
+        successMsg.style.opacity = 0;
+        setTimeout(() => {
+          errorMsg.style.opacity = 0;
+        }, 3000);
+      }
 
-    })(window, document);
-  </script>
-</body>
+      function showSuccess(msg) {
+        successMsg.textContent = msg;
+        successMsg.style.opacity = 1;
+        errorMsg.style.opacity = 0;
+        setTimeout(() => {
+          successMsg.style.opacity = 0;
+        }, 2000);
+      }
+
+      function swapButtons() {
+        const submitText = submitBtn.textContent;
+        const clearText = clearBtn.textContent;
+        submitBtn.textContent = clearText;
+        clearBtn.textContent = submitText;
+        buttonsSwapped = !buttonsSwapped;
+
+        // Clear the text box when buttons swap - extra frustration!
+        input.value = "";
+        checkbox.checked = false;
+      }
+
+      function switchCheckboxLabel() {
+        // Show the error immediately
+        showError("Something went wrong!");
+
+        // Make the change very subtle - add a small delay and smooth transition
+        checkboxLabel.style.opacity = 0.3;
+
+        setTimeout(() => {
+          if (checkboxLabel.textContent.includes("not a robot")) {
+            checkboxLabel.textContent = "I am not a human";
+          } else {
+            checkboxLabel.textContent = "I am not a robot";
+          }
+          checkboxLabel.style.opacity = 1;
+        }, 500); // Delayed by 0.5 seconds
+      }
+
+      function gaslightWord() {
+        const currentWord = words[currentWordIndex];
+        const wrongWord = gaslightMap[currentWord] || "WRONG";
+
+        // Change both the label AND the input field
+        label.textContent = `Type the word: ${currentWord}`;
+        input.value = wrongWord;
+      }
+
+      function isAnswerCorrect() {
+        const currentWord = words[currentWordIndex];
+        const typedWord = input.value.toUpperCase().trim();
+        const isCheckboxCorrect = checkbox.checked;
+
+        // Check if checkbox state matches the label
+        if (
+          checkboxLabel.textContent.includes("not a robot") &&
+          !isCheckboxCorrect
+        ) {
+          return false;
+        }
+        if (
+          checkboxLabel.textContent.includes("not a human") &&
+          isCheckboxCorrect
+        ) {
+          return false;
+        }
+
+        return typedWord === currentWord;
+      }
+
+      function handleCorrectAnswer() {
+        correctCount++;
+        wordCounter.textContent = `Word ${correctCount}/5`;
+        showSuccess("Correct! Next word...");
+
+        setTimeout(() => {
+          setNewWord();
+          // Reset any shenanigans
+          if (buttonsSwapped) {
+            swapButtons();
+          }
+          checkboxLabel.textContent = "I am not a robot";
+        }, 1500);
+      }
+
+      function performRandomShenanigan() {
+        // Weight the actions: word gaslighting more frequent, checkbox switching less frequent
+        const rand = Math.random();
+
+        if (rand < 0.4) {
+          // 40% chance - Gaslight the word
+          showError("Please type the word exactly as shown!"); // Immediate error message
+
+          setTimeout(() => {
+            gaslightWord(); // Delayed by 0.5 seconds (500ms)
+          }, 500);
+        } else if (rand < 0.6) {
+          // 20% - Swap buttons
+          swapButtons();
+          showError("Oops! Something seems different...");
+        } else if (rand < 0.75) {
+          // 15% - Switch checkbox label
+          switchCheckboxLabel();
+          // Delayed, subtle error message
+          setTimeout(() => {
+            showError("Please read the checkbox carefully!");
+          }, 800);
+        } else {
+          // 25% - Allow correct answer
+          if (isAnswerCorrect()) {
+            handleCorrectAnswer();
+          } else {
+            showError("Please complete all fields correctly!");
+          }
+        }
+      }
+
+      // Checkbox movement shenanigans - stays down longer
+      let checkboxIsDown = false;
+
+      checkbox.addEventListener("mouseenter", () => {
+        // Only move 20% of the time and only if not already down
+        if (!checkboxIsDown && Math.random() < 0.2) {
+          checkbox.style.marginTop = "25px";
+          checkboxIsDown = true;
+        }
+      });
+
+      // Move back up when checkbox gets focus/clicked
+      checkbox.addEventListener("focus", () => {
+        if (checkboxIsDown) {
+          checkbox.style.marginTop = "0px";
+          checkboxIsDown = false;
+        }
+      });
+
+      checkbox.addEventListener("click", () => {
+        if (checkboxIsDown) {
+          checkbox.style.marginTop = "0px";
+          checkboxIsDown = false;
+        }
+      });
+
+      // Submit button logic
+      submitBtn.addEventListener("click", () => {
+        if (buttonsSwapped && submitBtn.textContent === "Clear") {
+          // User clicked what looks like Submit but is actually Clear - clear everything
+          input.value = "";
+          checkbox.checked = false;
+          errorMsg.style.opacity = 0;
+          successMsg.style.opacity = 0;
+          showError("Form cleared! Try again...");
+          return;
+        }
+
+        performRandomShenanigan();
+      });
+
+      // Clear button logic
+      clearBtn.addEventListener("click", () => {
+        if (buttonsSwapped && clearBtn.textContent === "Submit") {
+          // User clicked what looks like Clear but is actually Submit
+          performRandomShenanigan();
+          return;
+        }
+
+        // Actually clear the form
+        input.value = "";
+        checkbox.checked = false;
+        errorMsg.style.opacity = 0;
+        successMsg.style.opacity = 0;
+      });
+
+      // Enter key support
+      input.addEventListener("keypress", (e) => {
+        if (e.key === "Enter") {
+          submitBtn.click();
+        }
+      });
+
+      // Initialize
+      setNewWord();
+    </script>
+  </body>
 </html>
