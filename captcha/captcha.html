@@ -1,27 +1,30 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet" />
     <meta charset="UTF-8" />
-    <title>Totally Normal CAPTCHA</title>
+    <title>Secondary Validation</title>
     <style>
       body {
-        font-family: sans-serif;
-        padding: 40px;
+        font-family: "Roboto", sans-serif;
+        padding: 20px;
         background-color: #f5f5f5;
       }
       .container {
         max-width: 400px;
-        margin: auto;
+        margin: 60px auto;
         border: 1px solid #ccc;
-        padding: 100px 20px 100px 20px; /* extra vertical space */
+        padding: 30px;
         border-radius: 8px;
         background-color: white;
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        height: 900px; /* force vertical scroll */
-        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
       }
+
       .button-row {
-        margin-top: 20px;
+        margin-top: 10px;
         display: flex;
         gap: 10px;
       }
@@ -62,12 +65,12 @@
         border-radius: 4px;
         width: 200px;
         margin-top: 5px;
+        text-transform: uppercase;
       }
       #checkbox-label {
         transition: opacity 0.2s ease;
       }
       #word-count {
-        margin-top: 300px; /* push this far down to require scrolling */
         font-weight: bold;
         color: #666;
       }
@@ -78,7 +81,6 @@
       label {
         display: block;
         margin-bottom: 5px;
-        font-weight: bold;
       }
     </style>
   </head>
@@ -108,7 +110,7 @@
 
     <script>
       const words = ["HORSE", "MANATEE", "PLANET", "DOCTOR", "TUNNEL"];
-      const gaslightMap = {
+      const specialMap = {
         HORSE: "HOUSE",
         MANATEE: "MATINEE",
         PLANET: "PLANED",
@@ -131,7 +133,12 @@
       const wordCounter = document.getElementById("word-count");
 
       function setNewWord() {
-        currentWordIndex = Math.floor(Math.random() * words.length);
+        let newIndex;
+        do {
+          newIndex = Math.floor(Math.random() * words.length);
+        } while (newIndex === currentWordIndex);
+        currentWordIndex = newIndex;
+
         const currentWord = words[currentWordIndex];
         label.textContent = `Type the word: ${currentWord}`;
         input.value = "";
@@ -163,16 +170,13 @@
         clearBtn.textContent = submitText;
         buttonsSwapped = !buttonsSwapped;
 
-        // Clear the text box when buttons swap - extra frustration!
         input.value = "";
         checkbox.checked = false;
       }
 
       function switchCheckboxLabel() {
-        // Show the error immediately
-        showError("Something went wrong!");
+        showError("Please submit again.");
 
-        // Make the change very subtle - add a small delay and smooth transition
         checkboxLabel.style.opacity = 0.3;
 
         setTimeout(() => {
@@ -182,14 +186,13 @@
             checkboxLabel.textContent = "I am not a robot";
           }
           checkboxLabel.style.opacity = 1;
-        }, 500); // Delayed by 0.5 seconds
+        }, 500); 
       }
 
-      function gaslightWord() {
+      function specialWord() {
         const currentWord = words[currentWordIndex];
-        const wrongWord = gaslightMap[currentWord] || "WRONG";
+        const wrongWord = specialMap[currentWord] || "WRONG";
 
-        // Change both the label AND the input field
         label.textContent = `Type the word: ${currentWord}`;
         input.value = wrongWord;
       }
@@ -199,7 +202,6 @@
         const typedWord = input.value.toUpperCase().trim();
         const isCheckboxCorrect = checkbox.checked;
 
-        // Check if checkbox state matches the label
         if (
           checkboxLabel.textContent.includes("not a robot") &&
           !isCheckboxCorrect
@@ -223,7 +225,6 @@
 
         setTimeout(() => {
           setNewWord();
-          // Reset any shenanigans
           if (buttonsSwapped) {
             swapButtons();
           }
@@ -231,50 +232,41 @@
         }, 1500);
       }
 
-      function performRandomShenanigan() {
-        // Weight the actions: word gaslighting more frequent, checkbox switching less frequent
+      function performTrustworthyVerification() {
         const rand = Math.random();
 
         if (rand < 0.4) {
-          // 40% chance - Gaslight the word
-          showError("Please type the word exactly as shown!"); // Immediate error message
+          showError("Please type the word exactly as shown."); 
 
           setTimeout(() => {
-            gaslightWord(); // Delayed by 0.5 seconds (500ms)
+            specialWord(); 
           }, 500);
         } else if (rand < 0.6) {
-          // 20% - Swap buttons
           swapButtons();
-          showError("Oops! Something seems different...");
+          showError("Field cleared.");
         } else if (rand < 0.75) {
-          // 15% - Switch checkbox label
           switchCheckboxLabel();
-          // Delayed, subtle error message
           setTimeout(() => {
-            showError("Please read the checkbox carefully!");
+            showError("Please clarify your robot status.");
           }, 800);
         } else {
-          // 25% - Allow correct answer
           if (isAnswerCorrect()) {
             handleCorrectAnswer();
           } else {
-            showError("Please complete all fields correctly!");
+            showError("Please clarify your robot status.");
           }
         }
       }
 
-      // Checkbox movement shenanigans - stays down longer
       let checkboxIsDown = false;
 
       checkbox.addEventListener("mouseenter", () => {
-        // Only move 20% of the time and only if not already down
         if (!checkboxIsDown && Math.random() < 0.2) {
           checkbox.style.marginTop = "25px";
           checkboxIsDown = true;
         }
       });
 
-      // Move back up when checkbox gets focus/clicked
       checkbox.addEventListener("focus", () => {
         if (checkboxIsDown) {
           checkbox.style.marginTop = "0px";
@@ -289,10 +281,8 @@
         }
       });
 
-      // Submit button logic
       submitBtn.addEventListener("click", () => {
         if (buttonsSwapped && submitBtn.textContent === "Clear") {
-          // User clicked what looks like Submit but is actually Clear - clear everything
           input.value = "";
           checkbox.checked = false;
           errorMsg.style.opacity = 0;
@@ -301,32 +291,31 @@
           return;
         }
 
-        performRandomShenanigan();
+        performTrustworthyVerification();
       });
 
-      // Clear button logic
       clearBtn.addEventListener("click", () => {
         if (buttonsSwapped && clearBtn.textContent === "Submit") {
-          // User clicked what looks like Clear but is actually Submit
-          performRandomShenanigan();
+          performTrustworthyVerification();
           return;
         }
 
-        // Actually clear the form
         input.value = "";
         checkbox.checked = false;
         errorMsg.style.opacity = 0;
         successMsg.style.opacity = 0;
       });
 
-      // Enter key support
       input.addEventListener("keypress", (e) => {
         if (e.key === "Enter") {
           submitBtn.click();
         }
       });
 
-      // Initialize
+      input.addEventListener("input", () => {
+        input.value = input.value.toUpperCase();
+      });
+
       setNewWord();
     </script>
   </body>
